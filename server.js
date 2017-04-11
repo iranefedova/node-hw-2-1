@@ -26,31 +26,39 @@ function proccess(req, res) {
       }
     };
 
+    let answ = '';
+    let answer = '';
     let request = http.request(options);
     request.write(JSON.stringify(lastname));
-    request.on('response', (res) => {
-      let answ = '';
-      res.on('data', (chunk) => answ += chunk);
-      res.on('end', () => {
-        console.log(answ);
+    request.on('response', (result) => {
+      result.on('data', (chunk) => answ += chunk);
+      result.on('end', () => {
+        answ = JSON.parse(answ);
+        answer = {
+          'firstName': pdata.firstname,
+          'lastName': pdata.lastname,
+          'secretKey': answ.hash
+        }
+
+        res.writeHead(200, 'OK', {'Content-Type': 'application/json'});
+        res.write(JSON.stringify(answer));
+        console.log('Answer is ready');
+        res.end();
       });
     });
 
-
     request.end();
-
 
   });
 
-  res.end();
+
 }
 
 function parse(data, contentType) {
-  console.log(contentType);
   if (contentType == 'application/json') {
     return JSON.parse(data);
   }
-  //
+
   if (contentType == 'application/x-www-form-urlencoded') {
     return queryString.parse(data);
   }
@@ -59,5 +67,8 @@ function parse(data, contentType) {
 const server = http.createServer();
 server.on('error', err => console.error(err));
 server.on('request', proccess);
+server.on('listening', () => {
+  console.log('Start HTTP on port %d', port);
+});
 
 server.listen(port);
